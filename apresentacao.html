@@ -64,11 +64,11 @@
   .andar strong{font-size:clamp(18px,2.3vw,30px);font-weight:800}
   .andar .tag{font-family:var(--mono);font-size:clamp(12px,1.3vw,16px);color:var(--ink-dim)}
   .andar .trad{font-size:clamp(14px,1.7vw,22px);color:var(--ink-dim);text-align:right}
-  /* "clique" no Andar 1 antes de sair do slide do prédio: os outros andares
-     somem e o Andar 1 (2º filho: térreo é o 1º) pisca como botão apertado */
-  .predio.escolheu .andar:not(:nth-child(2)){animation:sumirAndar .5s ease .15s both}
+  /* "clique" no andar-alvo antes de sair de um slide de prédio: os outros
+     andares somem e o alvo (.andar.alvo) pisca como botão apertado */
+  .predio.escolheu .andar:not(.alvo){animation:sumirAndar .5s ease .15s both}
   @keyframes sumirAndar{from{opacity:1}to{opacity:0}}
-  .predio.escolheu .andar:nth-child(2){animation:apertarAndar .55s ease both;border-color:var(--amarelo);box-shadow:0 0 0 3px rgba(201,154,82,.35),0 12px 40px rgba(201,154,82,.25)}
+  .predio.escolheu .andar.alvo{animation:apertarAndar .55s ease both;border-color:var(--amarelo);box-shadow:0 0 0 3px rgba(201,154,82,.35),0 12px 40px rgba(201,154,82,.25)}
   @keyframes apertarAndar{0%{transform:scale(1)}30%{transform:scale(.96)}60%{transform:scale(1.03)}100%{transform:scale(1)}}
   .andar.terreo{border-style:dashed}
   .andar.destaque{border-color:var(--amarelo);transform:scale(1.02)}
@@ -272,7 +272,7 @@
   body.modo-telao .btn-fala,body.modo-telao #falaPop,body.modo-telao .nav-dicas,body.modo-telao .rodape-slide{display:none}
 
   /* trilho de rolagem na borda direita - o deck lê como UMA página longa */
-  #trilhoRolagem{position:fixed;top:0;right:0;width:4px;height:100vh;z-index:25;background:rgba(201,154,82,.10);pointer-events:none}
+  #trilhoRolagem{position:fixed;top:0;right:0;width:8px;height:100vh;z-index:25;background:rgba(201,154,82,.10);pointer-events:none}
   #trilhoRolagem i{position:absolute;left:0;width:100%;background:rgba(201,154,82,.55);border-radius:2px}
   @media (prefers-reduced-motion: no-preference){
     #trilhoRolagem i{transition:top 2s cubic-bezier(.45,.05,.15,1)}
@@ -404,9 +404,9 @@
   <!-- 5 O PRÉDIO -->
   <section class="slide" data-nome="predio">
     <div class="eyebrow">O mapa do prédio</div>
-    <div class="predio" id="predioMapa">
+    <div class="predio clicavel" id="predioMapa">
       <div class="andar terreo"><span class="tag">TÉRREO</span><strong>Chat</strong><span class="trad">"pergunto, ela responde, esquece tudo"</span></div>
-      <div class="andar"><span class="tag">ANDAR 1</span><strong>Memória <span class="check">✓</span></strong><span class="trad">ela nunca esquece seu negócio</span></div>
+      <div class="andar alvo"><span class="tag">ANDAR 1</span><strong>Memória <span class="check">✓</span></strong><span class="trad">ela nunca esquece seu negócio</span></div>
       <div class="andar"><span class="tag">ANDAR 2</span><strong>Habilidades <span class="check">✓</span></strong><span class="trad">ensine uma vez, use pra sempre</span></div>
       <div class="andar"><span class="tag">ANDAR 3</span><strong>Conexões <span class="check">✓</span></strong><span class="trad">ela entra nas suas ferramentas</span></div>
       <div class="andar"><span class="tag">ANDAR 4</span><strong>Equipe <span class="check">✓</span></strong><span class="trad">de assistente a operação</span></div>
@@ -438,6 +438,15 @@
     <div class="eyebrow"><span class="num">ANDAR 1</span>Memória</div>
     <p class="sintese">A diferença não é a IA.<br><span class="grifo">É o que ela sabe de VOCÊ.</span><br>E isso se escreve uma vez.</p>  </section>
 
+  <!-- PRÉDIO PARCIAL: SUBINDO PRO ANDAR 2 -->
+  <section class="slide" data-nome="predio-a2">
+    <div class="eyebrow">O mapa do prédio</div>
+    <div class="predio checado clicavel">
+      <div class="andar terreo"><span class="tag">TÉRREO</span><strong>Chat</strong><span class="trad">"pergunto, ela responde, esquece tudo"</span></div>
+      <div class="andar"><span class="tag">ANDAR 1</span><strong>Memória <span class="check">✓</span></strong><span class="trad">ela nunca esquece seu negócio</span></div>
+      <div class="andar alvo"><span class="tag">ANDAR 2</span><strong>Habilidades</strong><span class="trad">ensine uma vez, use pra sempre</span></div>
+    </div>  </section>
+
   <!-- 7 ANDAR 2 CONCEITO -->
   <section class="slide" data-nome="a2-conceito">
     <div class="eyebrow"><span class="num">ANDAR 2</span>Habilidades</div>
@@ -461,6 +470,15 @@
     <p class="sintese">Você não pediu um texto.<br>Você apertou um botão<br>que <span class="grifo">você mesma construiu</span>.</p>  </section>
 
   <!-- 10 ANDAR 3 CONCEITO -->
+  <section class="slide" data-nome="predio-a3">
+    <div class="eyebrow">O mapa do prédio</div>
+    <div class="predio checado clicavel">
+      <div class="andar terreo"><span class="tag">TÉRREO</span><strong>Chat</strong><span class="trad">"pergunto, ela responde, esquece tudo"</span></div>
+      <div class="andar"><span class="tag">ANDAR 1</span><strong>Memória <span class="check">✓</span></strong><span class="trad">ela nunca esquece seu negócio</span></div>
+      <div class="andar"><span class="tag">ANDAR 2</span><strong>Habilidades <span class="check">✓</span></strong><span class="trad">ensine uma vez, use pra sempre</span></div>
+      <div class="andar alvo"><span class="tag">ANDAR 3</span><strong>Conexões</strong><span class="trad">ela entra nas suas ferramentas</span></div>
+    </div>  </section>
+
   <section class="slide" data-nome="a3-conceito">
     <div class="eyebrow"><span class="num">ANDAR 3</span>Conexões</div>
     <h2>Até aqui, ela era um cérebro<br><span class="grifo">trancado numa sala</span>.</h2>  </section>
@@ -483,6 +501,16 @@
     <p class="sintese">Eu não mandei nada pra ela.<br>Ela entrou na minha ferramenta<br>e <span class="grifo">deixou pronto</span>.</p>  </section>
 
   <!-- 13 ANDAR 4 CONCEITO -->
+  <section class="slide" data-nome="predio-a4">
+    <div class="eyebrow">O mapa do prédio</div>
+    <div class="predio checado clicavel">
+      <div class="andar terreo"><span class="tag">TÉRREO</span><strong>Chat</strong><span class="trad">"pergunto, ela responde, esquece tudo"</span></div>
+      <div class="andar"><span class="tag">ANDAR 1</span><strong>Memória <span class="check">✓</span></strong><span class="trad">ela nunca esquece seu negócio</span></div>
+      <div class="andar"><span class="tag">ANDAR 2</span><strong>Habilidades <span class="check">✓</span></strong><span class="trad">ensine uma vez, use pra sempre</span></div>
+      <div class="andar"><span class="tag">ANDAR 3</span><strong>Conexões <span class="check">✓</span></strong><span class="trad">ela entra nas suas ferramentas</span></div>
+      <div class="andar alvo"><span class="tag">ANDAR 4</span><strong>Equipe</strong><span class="trad">de assistente a operação</span></div>
+    </div>  </section>
+
   <section class="slide" data-nome="a4-conceito">
     <div class="eyebrow"><span class="num">ANDAR 4</span>Equipe - o clímax</div>
     <h2>Eu paro de conversar.<br><span class="grifo">Eu passo a delegar.</span></h2>
@@ -734,16 +762,19 @@ function irPara(n){
     mandarTelao({tipo:"salaVisivel"});
     return;
   }
-  /* saída do prédio: avançar primeiro "clica" no Andar 1 (o resto some, ele
-     pisca como botão), só depois rola pro Andar 1 de verdade */
-  if(!MODO_TELAO && !REDUZ_MOVIMENTO && atual === PREDIO_IDX && novo === atual + 1 && !predioClicou){
-    predioClicou = true;
-    predioMapa.classList.add("escolheu");
-    mandarTelao({tipo:"andar1"});
-    setTimeout(()=>{ if(atual === PREDIO_IDX) irPara(novo); }, 1300);
+  /* saída de um slide de prédio: avançar primeiro "clica" no andar-alvo (o
+     resto some, ele pisca como botão), só depois rola pro andar de verdade */
+  const predioAqui = PREDIOS_CLIQUE.get(atual);
+  if(!MODO_TELAO && !REDUZ_MOVIMENTO && predioAqui && novo === atual + 1 && !predioAqui.clicou){
+    predioAqui.clicou = true;
+    predioAqui.el.classList.add("escolheu");
+    mandarTelao({tipo:"apertarAndar", n:atual});
+    const veioDe = atual;
+    setTimeout(()=>{ if(atual === veioDe) irPara(novo); }, 1300);
     return;
   }
-  if(novo === PREDIO_IDX){ predioClicou = false; predioMapa.classList.remove("escolheu"); }
+  const predioDestino = PREDIOS_CLIQUE.get(novo);
+  if(predioDestino){ predioDestino.clicou = false; predioDestino.el.classList.remove("escolheu"); }
   /* saiu de um slide com replay rodando → pausa (nunca deixa rodar escondido) */
   if(novo !== atual && estadoDemo === "rodando"){
     ativos.forEach(r=>r.pausar()); estadoDemo = "pausado"; marcarBotao(btnAtivo, "pausado");
@@ -788,10 +819,11 @@ function irPara(n){
   mandarTelao({tipo:"slide", n:atual});
 }
 let slideSaindo = null, rolagemTimer = null;
-const PREDIO_IDX = slides.findIndex(s=>s.dataset.nome === "predio");
 const ABERTURA_IDX = slides.findIndex(s=>s.dataset.nome === "abertura");
-const predioMapa = document.getElementById("predioMapa");
-let predioClicou = false, salaVisivel = false;
+/* todo slide com um .predio.clicavel ganha o "clique" no andar-alvo ao sair */
+const PREDIOS_CLIQUE = new Map();
+slides.forEach((s,i)=>{ const p = s.querySelector(".predio.clicavel"); if(p) PREDIOS_CLIQUE.set(i, {el:p, clicou:false}); });
+let salaVisivel = false;
 
 /* ============ LEITURA DA SALA (encenação - nada muda de verdade) ============ */
 const salaSlider = document.getElementById("salaSlider");
@@ -1074,7 +1106,7 @@ if(MODO_TELAO && window.opener){
     const m = e.data || {};
     if(m.tipo === "slide" && typeof m.n === "number") irPara(m.n);
     else if(m.tipo === "espaco"){ const btn = slides[atual].querySelector(".btn-sim"); if(btn) acionarDemo(btn); }
-    else if(m.tipo === "andar1"){ predioMapa.classList.add("escolheu"); }
+    else if(m.tipo === "apertarAndar"){ const pc = PREDIOS_CLIQUE.get(m.n); if(pc) pc.el.classList.add("escolheu"); }
     else if(m.tipo === "salaSlider"){ pintarSlider(m.v); salaPlay.classList.add("pronto"); }
     else if(m.tipo === "salaVisivel"){ salaVisivel = true; document.querySelector(".sala-medida").classList.add("visivel"); }
     else if(m.tipo === "plateiaPct"){ plateiaPct = +m.v; }
