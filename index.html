@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>A Trilha - Além do Chat · Invictas Day</title>
 
-<!-- ===== progresso salvo dentro do próprio arquivo (preenchido ao clicar em "salvar meu progresso") ===== -->
+<!-- ===== estado embutido de arquivos salvos por versões antigas (hoje o progresso vive só no localStorage) ===== -->
 <script type="application/json" id="estado-salvo">{}</script>
 
 <style>
@@ -39,6 +39,11 @@
   .barra i{display:block;height:100%;width:100%;transform:scaleX(0);transform-origin:left;background:linear-gradient(90deg,#c99a52,#9d663c);border-radius:99px;transition:transform .45s cubic-bezier(.2,.8,.2,1)}
   .barra-txt{font-family:var(--mono);font-size:12px;color:var(--tinta-fraca);white-space:nowrap;font-variant-numeric:tabular-nums}
   .salvo-auto{font-family:var(--mono);font-size:12px;color:var(--ok);white-space:nowrap}
+  .salvo-chip{font-family:var(--mono);font-size:12px;font-weight:700;border:1px solid var(--borda);color:var(--tinta-fraca);border-radius:99px;padding:8px 16px;white-space:nowrap;transition:color .3s,border-color .3s,background .3s}
+  .salvo-chip.on{color:var(--amarelo);border-color:color-mix(in srgb,var(--amarelo) 55%,transparent);background:color-mix(in srgb,var(--amarelo) 10%,transparent)}
+  .salvo-chip.pulsa{animation:salvoPulsa .55s ease}
+  @keyframes salvoPulsa{0%{transform:scale(1)}35%{transform:scale(1.06);box-shadow:0 0 0 6px color-mix(in srgb,var(--amarelo) 18%,transparent)}100%{transform:scale(1)}}
+  @media (prefers-reduced-motion:reduce){ .salvo-chip.pulsa{animation:none} }
   .btn{font:inherit;font-weight:700;font-size:13px;border:1px solid var(--borda-forte);background:var(--cartao);color:var(--tinta);border-radius:99px;padding:8px 16px;cursor:pointer;white-space:nowrap;transition:transform .12s}
   .btn:hover{transform:translateY(-1px)}
   .btn.primario{background:var(--amarelo);border-color:var(--amarelo);color:#1a0605}
@@ -244,7 +249,7 @@
       <div class="barra" role="progressbar" id="barraEl" aria-label="progresso da trilha" aria-valuemin="0" aria-valuenow="0"><i id="barraFill"></i></div>
       <span class="barra-txt" id="barraTxt">0/22</span>
     </div>
-    <button class="btn primario" id="btnSalvar" type="button">salvar meu progresso</button>
+    <span class="salvo-chip" id="salvoAuto" role="status" aria-live="polite">salvamento automático</span>
   </div>
 </header>
 
@@ -1385,9 +1390,16 @@ const feitos = new Set(estado.feitos || []);
 let negocio = estado.negocio || "";
 
 function instantaneo(){ return {feitos: [...feitos], negocio, ts: Date.now()}; }
+const chipSalvo = document.getElementById("salvoAuto");
+function marcarSalvo(ok){
+  if(!chipSalvo) return;
+  chipSalvo.textContent = ok ? "salvo automaticamente ✓" : "não deu pra salvar neste navegador";
+  chipSalvo.classList.toggle("on", ok);
+  chipSalvo.classList.remove("pulsa"); void chipSalvo.offsetWidth; chipSalvo.classList.add("pulsa");
+}
 function gravarLocal(){
-  try{ localStorage.setItem(CHAVE, JSON.stringify(instantaneo())); }
-  catch(e){ /* file:// com storage bloqueado - o botão "salvar meu progresso" é o caminho */ }
+  try{ localStorage.setItem(CHAVE, JSON.stringify(instantaneo())); marcarSalvo(true); }
+  catch(e){ marcarSalvo(false); }
 }
 
 /* ===================== NOME DO NEGÓCIO NOS PROMPTS =====================
@@ -1505,46 +1517,15 @@ function pintar(){
   txt.textContent = n + "/" + TOTAL;
 }
 
-/* ===================== SALVAR O PROGRESSO NO PRÓPRIO ARQUIVO ===================== */
+/* ===================== AVISOS ===================== */
 function avisar(msg){
   const el = document.getElementById("avisoSalvo");
   el.textContent = msg; el.classList.add("on");
   clearTimeout(avisar.t); avisar.t = setTimeout(()=>el.classList.remove("on"), 3600);
 }
-/* No artifact publicado o iframe roda em sandbox sem allow-downloads: o Chrome
-   descarta o download em silêncio. Lá o botão vira aviso - o progresso continua
-   salvo no localStorage do navegador. */
-if(/(^|\.)claudeusercontent\.com$/.test(location.hostname)){
-  const nota = document.createElement("span");
-  nota.className = "salvo-auto";
-  nota.textContent = "progresso salvo neste navegador ✓";
-  document.getElementById("btnSalvar").replaceWith(nota);
-}
-document.getElementById("btnSalvar")?.addEventListener("click", ()=>{
-  const clone = document.documentElement.cloneNode(true);
-  const alvo = clone.querySelector("#estado-salvo");
-  /* escapa "<" pra que o JSON jamais feche o <script> onde ele mora */
-  alvo.textContent = JSON.stringify(instantaneo()).replace(/</g, "\\u003c");
-  /* prompts voltam ao texto cru: o nome do negócio viaja no JSON, não no HTML */
-  CRUS.forEach((cru, id)=>{ const p = clone.querySelector("#" + id); if(p) p.textContent = cru; });
-  const campo = clone.querySelector("#nomeNegocio");
-  if(campo) campo.removeAttribute("value");
-  /* o arquivo baixado deve abrir no menu, não na página em que a pessoa estava */
-  clone.querySelectorAll(".pagina").forEach(p=>p.classList.toggle("ativa", p.dataset.pagina === "menu"));
-  /* Devolve o clone ao estado "de fábrica": tudo que o script gera (cartões do menu,
-     itens do checklist, botões de navegação) sai daqui e é reconstruído no load a
-     partir do JSON. Salvar o HTML gerado só duplicaria o conteúdo e engordaria o arquivo. */
-  clone.querySelector("#grade").innerHTML = "";
-  clone.querySelectorAll("[data-checa], [data-passos]").forEach(el=>el.innerHTML = "");
-
-  const html = "<!doctype html>\n<html lang=\"pt-BR\">" + clone.innerHTML + "</html>";
-  const url = URL.createObjectURL(new Blob([html], {type: "text/html;charset=utf-8"}));
-  const a = document.createElement("a");
-  a.href = url; a.download = "minha-trilha-invicta.html";
-  document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(()=>URL.revokeObjectURL(url), 1000);
-  avisar("Baixei o arquivo com seu progresso - guarde ele e abra da próxima vez.");
-});
+/* O progresso vive só no localStorage deste navegador - não existe mais download
+   do arquivo. Arquivos salvos antigamente (com #estado-salvo preenchido) ainda
+   abrem e são lidos por lerEmbutido(). */
 
 /* ===================== COPIAR PROMPTS ===================== */
 const TEMPLATE = `
