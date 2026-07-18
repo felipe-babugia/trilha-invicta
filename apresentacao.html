@@ -288,6 +288,228 @@
   }
 </style>
 
+<!-- ═════════ MODO-IA: INICIO ═════════
+     Efeito "a IA esta montando este slide agora": ao cada slide/pagina ficar
+     ativo, o titulo e digitado letra a letra e os demais blocos nascem como
+     esqueleto que se reajusta de tamanho antes de virar conteudo.
+     Nao altera nenhum conteudo: so observa a classe .ativa e anima.
+     SEGURANCA DE PALCO: qualquer tecla/clique COMPLETA a animacao na hora e
+     deixa o comando passar (seta navega, ESPACO roda a demo, F fala, P telao).
+     Para DESLIGAR: apagar deste comentario ate "MODO-IA: FIM".
+     Escapes: ?semboot na URL, prefers-reduced-motion.
+     ═══════════════════════════════════ -->
+<style>
+  /* ---- fase 1: rascunho de terminal (mono, branco, menor) ---- */
+  .mia-cru{font-family:var(--mono,monospace)!important;font-size:clamp(13px,1.05vw,18px)!important;
+    line-height:1.55!important;color:#fff!important;letter-spacing:.02em!important;
+    font-style:normal!important;font-weight:400!important;text-transform:none!important;
+    text-shadow:none!important;-webkit-text-fill-color:#fff!important;background-image:none!important}
+  .mia-cru *{color:#fff!important;-webkit-text-fill-color:#fff!important;font-style:normal!important;
+    font-weight:400!important;letter-spacing:.02em!important;background-image:none!important}
+  /* caixa ainda nao "renderizada": so o contorno do wireframe */
+  .mia-caixa{background:transparent!important;background-image:none!important;box-shadow:none!important;
+    border:1px dashed color-mix(in srgb,var(--amarelo,#c99a52) 52%,transparent)!important;
+    border-radius:5px!important}
+  /* ---- fase 2: acabamento (o que da pra interpolar, interpola) ---- */
+  .mia-morph{transition:font-size .5s cubic-bezier(.2,.7,.2,1),line-height .5s ease,
+    color .55s ease,-webkit-text-fill-color .55s ease,letter-spacing .55s ease,
+    background-color .5s ease,border-color .5s ease,border-radius .5s ease,box-shadow .5s ease}
+  /* cursor da datilografia */
+  .mia-digitando::after{content:"";display:inline-block;width:.09em;height:.82em;
+    margin-left:.07em;vertical-align:-.04em;border-radius:1px;
+    background:var(--amarelo,#c99a52);opacity:.85;
+    animation:miaPisca .85s steps(1) infinite}
+  .mia-cru.mia-digitando::after{background:#fff;width:.5em;opacity:.9}
+  @keyframes miaPisca{50%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.mia-digitando::after{display:none}}
+</style>
+<script>
+(function(){
+  if(/[?&]semboot/.test(location.search)) return;
+  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+
+  /* telas com coreografia propria ja validada: nao mexer
+     (o genio e a leitura da sala encenam sozinhos; os replays de chat JA
+     simulam digitacao - digitar por cima seria digitar duas vezes) */
+  var SEM_EFEITO = /^(genio|plateia)$/;
+  /* nunca tocar: cromo fixo da tela e conteudo que se anima sozinho */
+  var PROIBIDO = '.chat, .chat *, #falaPop, #falaPop *, .btn-fala, .dicas, #contador, .selo-marca, .sala-medida, .topo, .topo *, script, style';
+  /* caixas que devem nascer como wireframe e so depois virar componente */
+  var SEL_CAIXA = '.andar, .predio, .janela, .btn-sim, .btn-play, .btn, button, table, td, th, .cartao, .cartao-dia, .passo, .perg, .chip, .card';
+  var TETO_MS = 7000;      /* teto da datilografia por tela */
+  var PASSO_ACAB = 85;     /* intervalo do acabamento, de cima para baixo */
+  var ACAB_TOTAL = 2600;   /* teto da cascata de acabamento na tela inteira */
+
+  var emCurso = [], agendado = [];
+  function concluirTudo(){
+    agendado.forEach(clearTimeout); agendado = [];
+    var f = emCurso; emCurso = [];
+    f.forEach(function(fn){ try{ fn(); }catch(e){} });
+  }
+  /* capture SEM stopPropagation: completa a animacao e deixa a tecla agir */
+  ['keydown','mousedown','wheel','touchstart'].forEach(function(ev){
+    window.addEventListener(ev, function(){ if(emCurso.length || agendado.length) concluirTudo(); }, true);
+  });
+
+  function ehTitulo(no){
+    var p = no.parentElement;
+    while(p && p !== document.body){
+      if(/^(H1|H2|H3)$/.test(p.tagName) || p.classList.contains('sintese')) return true;
+      p = p.parentElement;
+    }
+    return false;
+  }
+  function deCimaParaBaixo(a,b){
+    var ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    return (ra.top - rb.top) || (ra.left - rb.left);
+  }
+
+  function montarTela(tela){
+    /* --- 1. texto, em ordem de documento (de cima para baixo) --- */
+    var nos = [], andador = document.createTreeWalker(tela, NodeFilter.SHOW_TEXT, {
+      acceptNode: function(n){
+        if(!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        var p = n.parentElement;
+        if(!p || p.closest(PROIBIDO)) return NodeFilter.FILTER_REJECT;
+        if(!p.offsetHeight && !p.offsetWidth) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    var n; while((n = andador.nextNode())) nos.push(n);
+
+    /* --- 2. caixas visuais (andares, botoes, janelas, tabela) --- */
+    var caixas = [].slice.call(tela.querySelectorAll(SEL_CAIXA)).filter(function(e){
+      return !e.closest(PROIBIDO) && e.offsetHeight && e.offsetWidth;
+    });
+    if(!nos.length && !caixas.length) return null;
+
+    /* --- 3. trava a caixa ANTES de esvaziar: nada pula de layout --- */
+    var travados = [];
+    function travar(e, prop, val){ travados.push([e,prop]); e.style[prop] = val; }
+    [].slice.call(tela.children).forEach(function(c){
+      var h = c.offsetHeight; if(h) travar(c,'minHeight',h+'px');
+    });
+    caixas.forEach(function(e){
+      if(e.offsetWidth) travar(e,'minWidth',e.offsetWidth+'px');
+      if(e.offsetHeight) travar(e,'minHeight',e.offsetHeight+'px');
+    });
+
+    /* --- 4. estado de rascunho --- */
+    var alvosTexto = [], vistos = [];
+    nos.forEach(function(x){
+      var p = x.parentElement;
+      if(vistos.indexOf(p) === -1){ vistos.push(p); alvosTexto.push(p); }
+    });
+    var tocados = alvosTexto.concat(caixas);
+    tocados.forEach(function(e){ e.classList.add('mia-morph'); });
+    alvosTexto.forEach(function(e){ e.classList.add('mia-cru'); });
+    caixas.forEach(function(e){ e.classList.add('mia-caixa'); });
+
+    var orig = nos.map(function(x){ return x.nodeValue; });
+    nos.forEach(function(x){ x.nodeValue = ''; });
+
+    var totalCh = orig.reduce(function(a,s){ return a + s.length; }, 0) || 1;
+    var base = nos.length && ehTitulo(nos[0]) ? 15 : 8;
+    var vel = Math.max(3, Math.min(base, Math.floor(TETO_MS / totalCh)));
+
+    var iNo = 0, iCh = 0, t = null, morto = false, alvoAtual = null, comeco = null;
+    function limparCursor(){ if(alvoAtual){ alvoAtual.classList.remove('mia-digitando'); alvoAtual = null; } }
+    function terminar(){
+      if(morto) return; morto = true;
+      clearTimeout(t); limparCursor();
+      for(var k=0;k<nos.length;k++) nos[k].nodeValue = orig[k];
+      tocados.forEach(function(e){ e.classList.remove('mia-cru','mia-caixa','mia-morph'); });
+      travados.forEach(function(par){ par[0].style[par[1]] = ''; });
+    }
+    emCurso.push(terminar);
+
+    /* --- 6. acabamento: tira o rascunho de cima para baixo, um por um --- */
+    function acabar(){
+      if(morto) return;
+      limparCursor();
+      var fila = tocados.slice().sort(deCimaParaBaixo);
+      /* tela densa (dias da trilha) tem dezenas de elementos: aperta o intervalo
+         pra cascata inteira nunca passar de ACAB_TOTAL */
+      var passoAcab = Math.min(PASSO_ACAB, Math.max(12, Math.floor(ACAB_TOTAL / Math.max(1,fila.length))));
+      fila.forEach(function(e,k){
+        agendado.push(setTimeout(function(){
+          e.classList.remove('mia-cru','mia-caixa');
+        }, k * passoAcab));
+      });
+      /* solta as travas e as transicoes so depois que o ultimo assentou */
+      agendado.push(setTimeout(function(){
+        if(morto) return;
+        travados.forEach(function(par){ par[0].style[par[1]] = ''; });
+        tocados.forEach(function(e){ e.classList.remove('mia-morph'); });
+        morto = true;
+      }, fila.length * passoAcab + 650));
+    }
+
+    /* --- 5. datilografia --- */
+    function passo(){
+      if(morto) return;
+      if(comeco === null) comeco = Date.now();
+      if(!nos.length){ acabar(); return; }
+      if(Date.now() - comeco > TETO_MS){                    /* teto de seguranca */
+        for(var k=0;k<nos.length;k++) nos[k].nodeValue = orig[k];
+        acabar(); return;
+      }
+      var no = nos[iNo], s = orig[iNo], pai = no.parentElement;
+      if(pai !== alvoAtual){ limparCursor(); alvoAtual = pai; pai.classList.add('mia-digitando'); }
+      var salto = s.length > 160 ? 3 : 1;
+      iCh = Math.min(s.length, iCh + salto);
+      no.nodeValue = s.slice(0, iCh);
+      if(iCh >= s.length){
+        iNo++; iCh = 0;
+        if(iNo >= nos.length){ acabar(); return; }
+        t = setTimeout(passo, 110);        /* respiro entre um bloco e o proximo */
+        return;
+      }
+      t = setTimeout(passo, vel);
+    }
+    return passo;
+  }
+
+  function ativou(el){
+    concluirTudo();
+    var nome = el.dataset.nome || el.dataset.pagina || '';
+    if(el.dataset.miaFeito) return;
+    el.dataset.miaFeito = '1';
+    if(SEM_EFEITO.test(nome)) return;
+    var passo = montarTela(el);
+    if(!passo) return;
+    /* a montagem roda DURANTE a rolagem de 2s (o conteudo original tambem viaja
+       visivel); o genio mantem a espera-longa de 1,6s do proprio deck */
+    var espera = el.classList.contains('entra-baixo') || el.classList.contains('entra-cima') ? 700 : 180;
+    if(el.classList.contains('espera-longa')) espera += 1600;
+    agendado.push(setTimeout(passo, espera));
+  }
+
+  function observar(){
+    var alvos = document.querySelectorAll('.slide, .pagina');
+    if(!alvos.length) return;
+    /* irPara mexe na classe 2x por avanco (entra-baixo + ativa) e o observer
+       entrega os dois registros: sem este guarda a 2a chamada cancelaria a 1a */
+    var corrente = null;
+    var obs = new MutationObserver(function(muts){
+      muts.forEach(function(m){
+        if(m.attributeName !== 'class') return;
+        if(!m.target.classList.contains('ativa')){ if(m.target === corrente) corrente = null; return; }
+        if(m.target === corrente) return;
+        corrente = m.target; ativou(m.target);
+      });
+    });
+    alvos.forEach(function(a){ obs.observe(a, {attributes:true, attributeFilter:['class']}); });
+    var ja = document.querySelector('.slide.ativa, .pagina.ativa');
+    if(ja){ corrente = ja; ativou(ja); }
+  }
+  if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observar);
+  else observar();
+})();
+</script>
+<!-- ═════════ MODO-IA: FIM ═════════ -->
+
+
 <canvas id="brasasGlobais" aria-hidden="true"></canvas>
 <div id="trilhoRolagem" aria-hidden="true"><i></i></div>
 
