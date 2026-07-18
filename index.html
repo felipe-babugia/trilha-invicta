@@ -69,7 +69,8 @@
   .steps{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;position:relative}
   .step{text-align:center}
   .step .dot{width:13px;height:13px;border-radius:50%;margin:0 auto;background:var(--cartao);border:1px solid var(--borda);position:relative;z-index:2}
-  .step:first-child .dot{background:linear-gradient(180deg,#e6c49a,#9d663c);border-color:transparent;box-shadow:0 0 0 5px color-mix(in srgb,#9d663c 22%,transparent)}
+  .step.feito .dot{background:linear-gradient(180deg,#e6c49a,#9d663c);border-color:transparent;box-shadow:0 0 0 5px color-mix(in srgb,#9d663c 22%,transparent)}
+  .step.feito .t{color:var(--amarelo)}
   .step .d{margin-top:15px;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.11em;text-transform:uppercase;color:var(--tinta-fraca)}
   .step .t{margin-top:4px;font-size:13px;font-weight:600;color:var(--tinta);line-height:1.2}
   @media (max-width:600px){ .stepper{display:none} }
@@ -1463,14 +1464,16 @@ window.addEventListener("hashchange", ()=>irPara(location.hash.slice(1) || "menu
 
 /* ===================== PINTAR PROGRESSO ===================== */
 const fill = document.getElementById("barraFill"), txt = document.getElementById("barraTxt");
+const passosStepper = document.querySelectorAll(".stepper .step");
 function pintar(){
-  DIAS.forEach(d=>{
+  DIAS.forEach((d, i)=>{
     const est = estadoDoDia(d);
     const cartao = document.querySelector(`.cartao-dia[data-dia="${d.id}"]`);
     if(cartao){
       cartao.dataset.estado = est.chave;
       cartao.querySelector(".selo").textContent = est.chave === "feito" ? ROTULO_ESTADO.feito : `${est.n}/${est.total}`;
     }
+    if(passosStepper[i]) passosStepper[i].classList.toggle("feito", est.chave === "feito");
   });
   const n = feitos.size;
   fill.style.transform = "scaleX(" + (n / TOTAL) + ")";
